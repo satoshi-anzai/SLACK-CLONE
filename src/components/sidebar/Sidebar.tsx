@@ -6,7 +6,7 @@ export async function Sidebar() {
   const [channels, dms] = await Promise.all([fetchChannels(), fetchDMs()]);
 
   return (
-    <aside className="flex h-full w-[260px] shrink-0 flex-col bg-slack-aubergine text-slack-sidebar-text">
+    <div className="flex h-full w-full flex-col bg-slack-aubergine text-slack-sidebar-text">
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
         <button className="flex items-center gap-1 text-white">
           <span className="text-[15px] font-bold">Acme Workspace</span>
@@ -24,6 +24,6 @@ export async function Sidebar() {
         <ChannelList title="Channels" items={channels} canAdd />
         <ChannelList title="Direct messages" items={dms} canAdd />
       </nav>
-    </aside>
+    </div>
   );
 }
