@@ -4,96 +4,121 @@
 
 ## プロジェクト概要
 
-Slack 風のチャットフロントエンドを構築する学習・プロトタイプ用プロジェクト。
-現フェーズではバックエンドを持たず、モックデータで UI を完成させることを目的とする。
+Slack 風のチャットアプリ (学習・プロトタイプ用)。
+フロントの UI はモックで一通り完成済み。これから **Supabase でバックエンドをつなげていく** フェーズ。
 
 ## 技術スタック
 
 - **Framework**: Next.js (App Router) + React 19
 - **言語**: TypeScript (strict)
 - **スタイリング**: Tailwind CSS
-- **UI コンポーネント**: shadcn/ui (Radix UI ベース)
 - **アイコン**: lucide-react
-- **状態管理**: 当面は React の `useState` / `useReducer` のみ。グローバル状態が必要になった時点で zustand を検討
-- **データ**: `src/lib/mock/` 配下の TypeScript モジュールで提供するモックデータ。API 呼び出しは将来差し替えやすいよう `src/lib/api/` のフェッチ関数経由で読む
+- **状態管理**: `useState` / Context のみ。必要になったら zustand
+- **バックエンド**: Supabase (Auth / DB / Realtime)
+  - クライアント: `@supabase/supabase-js` + `@supabase/ssr`
+  - 開発環境: Supabase CLI + Docker でローカル起動 (`supabase start`)
+  - スキーマ管理: **ダッシュボードで手動**。Claude は SQL を提示するだけで適用はしない
 
 ## 現フェーズのスコープ
 
 含む:
-- 左サイドバーのチャンネル一覧表示
-- チャンネル選択時のメッセージタイムライン表示
-- 基本レイアウト (Slack の 3 ペイン構造: サイドバー / メイン / 右ペインの枠)
+- フロント UI (実装済)
+- ログイン / サインアップ画面 (UI 実装済)
+- Supabase Auth による認証
+- channels / messages / users の DB 永続化
+- メッセージ送信
+- Realtime 購読 (チャンネル + スレッド)
+- **スレッド返信** (右ペイン、`messages.parent_message_id` で親子関係。MessageItem hover の💬で開く)
+- DM (既存チャンネルと同じ仕組み。`channels.kind = 'dm'` で扱う)
 
-含まない (将来):
-- メッセージ送信、スレッド返信
-- DM、メンション、絵文字リアクション
-- ファイル添付、検索、通知
-- 認証、リアルタイム通信
+含まない (依頼があるまで実装しない):
+- DM 新規作成 / マルチパーティ DM、メンション、リアクション、ファイル添付、検索、通知
 
-スコープ外の機能は **依頼があるまで実装しない**。先回りで雛形を増やさない。
-
-## ディレクトリ構成 (実装済み)
+## ディレクトリ構成
 
 ```
 src/
   app/
-    layout.tsx              // ルートレイアウト (AppShell をここで適用)
-    page.tsx                // "/" は /c_general に redirect
-    [channelId]/page.tsx    // チャンネル本体ページ
-    not-found.tsx           // 404
-    globals.css             // Tailwind + 最小グローバル
+    layout.tsx
+    globals.css
+    (app)/                    // チャット UI (AppShell 適用)
+      layout.tsx
+      page.tsx                // /c_general に redirect
+      not-found.tsx
+      [channelId]/page.tsx
+    (auth)/                   // ログイン/サインアップ (単独レイアウト)
+      layout.tsx
+      login/                  // page.tsx + LoginForm + QuickLoginButtons
+      signup/page.tsx
   components/
-    layout/
-      AppShell.tsx          // 3 ペイン構造の枠
-      WorkspaceHeader.tsx   // 上部の検索バー含むヘッダー
-    sidebar/
-      Sidebar.tsx           // ワークスペース名 + 一覧セクション
-      ChannelList.tsx       // 折りたたみ可能なチャンネル/DM リスト (client)
-    message/
-      ChannelHeader.tsx     // # channel-name + topic
-      MessageList.tsx       // 日付区切り + 連続発言のグルーピング
-      MessageItem.tsx       // 1 メッセージ
-      MessageComposer.tsx   // 入力欄 (現フェーズは disabled)
+    layout/                   // AppShell, Sidebar の開閉, ヘッダー
+    sidebar/                  // Sidebar, ChannelList, LogoutButton
+    message/                  // ChannelHeader, MessageList, MessageItem, MessageComposer
   lib/
-    types/index.ts          // Channel / Message / User の型
-    utils.ts                // cn, formatTime, formatDateLabel
-    mock/                   // users.ts, channels.ts, messages.ts
-    api/                    // fetchChannels, fetchMessages — モック return
+    types/                    // Channel / Message / User
+    utils.ts
+    supabase/                 // (新設予定) browser.ts / server.ts の client factory
+    api/                      // fetchChannels など。Supabase クエリへ段階的に差し替え
+    mock/                     // ★削除しない。シードのソースとして残す
+
+scripts/
+  seed.ts                     // (新設予定) mock を Supabase に流し込む
 ```
+
+## 環境変数 (`.env.local`)
+
+- `NEXT_PUBLIC_SUPABASE_URL` — ローカルは `http://localhost:54321`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — `supabase status` で確認
+- `SUPABASE_SERVICE_ROLE_KEY` — **サーバー専用**。`NEXT_PUBLIC_` を絶対に付けない
+- `SUPABASE_ACCESS_TOKEN` — Supabase CLI 用 (既存)
 
 ## 開発コマンド
 
 ```bash
 npm run dev        # 開発サーバー (http://localhost:3000)
-npm run build      # 本番ビルド
-npm run lint       # ESLint
-npm run typecheck  # tsc --noEmit
+npm run build
+npm run lint
+npm run typecheck
+
+supabase start     # ローカル Supabase 起動
+supabase status    # URL / キー確認
+supabase stop
+supabase db reset  # ローカル DB リセット
 ```
 
-> 本環境では `pnpm` が未インストールのため `npm` を採用 (`package.json` の `name` は `slack-clone-frontend`)。
-> 初期セットアップは `create-next-app` ではなく手動構成済み (ディレクトリ名に大文字 `claudeMD` を含むため npm の name 制約を回避)。
+ローカル Studio: `http://localhost:54323`
+
+> npm を使用 (`pnpm` 未インストール)。手動構成済 (ディレクトリ名 `claudeMD` のため `create-next-app` 不可)
 
 ## コーディング規約
 
-- **TypeScript**: `any` 禁止。`unknown` + 型ガードを使う
-- **コンポーネント**: 関数コンポーネント + named export。1 ファイル 1 主要コンポーネント
-- **Server / Client**: デフォルトは Server Component。インタラクションがあるものだけ `"use client"`
-- **スタイル**: Tailwind ユーティリティを直接書く。`className` の長文化は `clsx` / `cn` で整理
-- **shadcn/ui**: 現フェーズでは未導入 (純 Tailwind + lucide-react で十分な範囲のため)。必要になった時点で `npx shadcn@latest add <component>` で追加し、`src/components/ui/` に置く
-- **import パス**: `@/` エイリアスを使う (相対パス `../../` は避ける)
-- **コミット**: Conventional Commits (`feat:`, `fix:`, `refactor:` …)
+- **TypeScript**: `any` 禁止。`unknown` + 型ガード
+- **コンポーネント**: 関数 + named export、1 ファイル 1 主要コンポーネント
+- **Server / Client**: デフォルト Server Component。インタラクションだけ `"use client"`
+- **import**: `@/` エイリアス
+- **コミット**: Conventional Commits
+
+### Supabase
+- **データ取得は API 層 (`src/lib/api/`) に集約**。コンポーネントから `supabase.from(...)` を直接呼ばない
+- **client factory の使い分け**:
+  - Server Component / Route Handler → `lib/supabase/server.ts`
+  - Client Component → `lib/supabase/browser.ts`
+  - service role が必要な処理 → サーバー側で都度生成。ブラウザに渡らないよう注意
+- **RLS は必ず有効化**。クライアントは anon key で動かす
+- **`{ data, error }` の error を握り潰さない**
 
 ## Slack ライク UI のデザインメモ
 
-- 配色は Slack の Aubergine テーマを基準 (サイドバー: 濃紫 `#3F0E40`, アクセント: `#1164A3`)。Tailwind の theme 拡張で `slack-aubergine` 等の名前で定義
-- フォントは Slack 同様 Lato / system-ui スタックで十分
-- サイドバー幅は固定 (260px 程度)、メインは可変、右ペインは折りたたみ可能
-- メッセージ行は hover でアクションバー表示 (将来用)
+- 配色: Slack Aubergine (`#3F0E40`) + アクセント `#1164A3` (Tailwind theme で `slack-*` 定義済)
+- フォント: Lato / system-ui
+- サイドバー 260px 固定、md 未満ではドロワー
 
 ## Claude への指示
 
-- **モックの差し替えやすさを優先**。コンポーネントはデータ取得関数を props か Server Component の fetch で受け取り、UI から直接モックを import しない
-- **未実装機能を勝手に作らない**。「リアクション」「スレッド」などスコープ外と書かれているものは、依頼があるまで触らない
-- **新しいファイル/ライブラリの追加は最小限**。既存ファイルを編集できる場合は編集を優先
-- **`src/components/ui/` の編集は避ける**。shadcn の再生成で消える前提
-- UI 変更後は `npm run dev` でブラウザ確認するか、確認できない場合はその旨を明示する
+- **モック → Supabase の差し替えは段階的に**。`src/lib/api/*` のシグネチャを保ち、内部実装だけ替える。UI 側は触らずに済むように
+- **モックは削除しない** (シード用に残す)
+- **未実装機能を勝手に作らない**。スコープ外は依頼があるまで触らない
+- **スキーマ変更**: SQL を提示するだけで Claude 自身は適用しない。「Studio の SQL Editor で実行してください」と依頼する
+- **新テーブル提案時は RLS ポリシーもセットで**
+- **service role key を Client Component や `NEXT_PUBLIC_*` に渡さない**
+- UI 変更後は `npm run dev` でブラウザ確認、Supabase 変更後は `npm run typecheck`

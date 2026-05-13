@@ -4,19 +4,51 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDown, ChevronRight, Hash, Lock, Plus } from "lucide-react";
-import type { Channel } from "@/lib/types";
+import type { Channel, User } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { NewChannelModal } from "@/components/sidebar/NewChannelModal";
+import { NewDMModal } from "@/components/sidebar/NewDMModal";
+
+type ChannelRow = Channel & { user?: User };
+type AddType = "channel" | "dm";
+
+function PresenceDot({ status }: { status: User["status"] }) {
+  if (status === "active") {
+    return (
+      <span
+        className="absolute -bottom-0.5 -right-0.5 inline-block h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-slack-aubergine"
+        aria-hidden
+      />
+    );
+  }
+  if (status === "away") {
+    return (
+      <span
+        className="absolute -bottom-0.5 -right-0.5 inline-block h-2 w-2 rounded-full bg-yellow-400 ring-2 ring-slack-aubergine"
+        aria-hidden
+      />
+    );
+  }
+  return (
+    <span
+      className="absolute -bottom-0.5 -right-0.5 inline-block h-2 w-2 rounded-full border border-slack-sidebar-text bg-transparent ring-2 ring-slack-aubergine"
+      aria-hidden
+    />
+  );
+}
 
 export function ChannelList({
   title,
   items,
-  canAdd = false,
+  addType,
 }: {
   title: string;
-  items: Channel[];
-  canAdd?: boolean;
+  items: ChannelRow[];
+  /** + ボタンを表示する場合に種別を指定 */
+  addType?: AddType;
 }) {
   const [open, setOpen] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
   const pathname = usePathname();
 
   return (
@@ -33,8 +65,10 @@ export function ChannelList({
           )}
           <span>{title}</span>
         </button>
-        {canAdd && (
+        {addType && (
           <button
+            type="button"
+            onClick={() => setModalOpen(true)}
             className="rounded p-1 text-white/60 hover:bg-slack-sidebar-hover hover:text-white"
             aria-label={`Add ${title}`}
           >
@@ -42,6 +76,13 @@ export function ChannelList({
           </button>
         )}
       </div>
+
+      {modalOpen && addType === "channel" && (
+        <NewChannelModal onClose={() => setModalOpen(false)} />
+      )}
+      {modalOpen && addType === "dm" && (
+        <NewDMModal onClose={() => setModalOpen(false)} />
+      )}
 
       {open && (
         <ul>
@@ -68,6 +109,17 @@ export function ChannelList({
                     ) : (
                       <Hash className="h-3.5 w-3.5 shrink-0" />
                     )
+                  ) : c.user ? (
+                    <span className="relative shrink-0">
+                      <span
+                        className="flex h-5 w-5 items-center justify-center rounded text-[10px] font-bold text-white"
+                        style={{ backgroundColor: c.user.avatarColor }}
+                        aria-hidden
+                      >
+                        {c.user.displayName[0]}
+                      </span>
+                      <PresenceDot status={c.user.status} />
+                    </span>
                   ) : (
                     <span
                       className="inline-block h-2 w-2 shrink-0 rounded-full bg-emerald-400"

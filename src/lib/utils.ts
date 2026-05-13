@@ -12,14 +12,21 @@ export function formatTime(iso: string) {
   return `${hh}:${mm}`;
 }
 
+function startOfDay(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
 export function formatDateLabel(iso: string) {
   const d = new Date(iso);
   const today = new Date();
-  const isSameDay =
-    d.getFullYear() === today.getFullYear() &&
-    d.getMonth() === today.getMonth() &&
-    d.getDate() === today.getDate();
-  if (isSameDay) return "Today";
+  const diffDays = Math.floor(
+    (startOfDay(today) - startOfDay(d)) / (24 * 60 * 60 * 1000),
+  );
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays > 1 && diffDays < 7) {
+    return d.toLocaleDateString("en-US", { weekday: "long" });
+  }
   return d.toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",

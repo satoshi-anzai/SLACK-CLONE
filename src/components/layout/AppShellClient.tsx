@@ -2,6 +2,8 @@
 
 import type { ReactNode } from "react";
 import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
+import { ThreadProvider, useThread } from "@/components/message/ThreadContext";
+import { ThreadPane } from "@/components/message/ThreadPane";
 import { cn } from "@/lib/utils";
 
 interface AppShellClientProps {
@@ -12,6 +14,8 @@ interface AppShellClientProps {
 
 function AppShellInner({ header, sidebar, children }: AppShellClientProps) {
   const { open, close } = useSidebar();
+  const { openMessageId } = useThread();
+  const threadOpen = openMessageId !== null;
 
   return (
     <div className="flex h-screen w-screen flex-col bg-slack-aubergine text-white">
@@ -38,6 +42,16 @@ function AppShellInner({ header, sidebar, children }: AppShellClientProps) {
         <main className="flex-1 overflow-hidden rounded-tl-md bg-white text-gray-900">
           {children}
         </main>
+        {threadOpen && (
+          <aside
+            className={cn(
+              "z-40 h-full shrink-0 border-l border-gray-200 bg-white text-gray-900",
+              "fixed inset-y-0 right-0 w-full md:static md:w-[420px]",
+            )}
+          >
+            <ThreadPane />
+          </aside>
+        )}
       </div>
     </div>
   );
@@ -46,7 +60,9 @@ function AppShellInner({ header, sidebar, children }: AppShellClientProps) {
 export function AppShellClient(props: AppShellClientProps) {
   return (
     <SidebarProvider>
-      <AppShellInner {...props} />
+      <ThreadProvider>
+        <AppShellInner {...props} />
+      </ThreadProvider>
     </SidebarProvider>
   );
 }
