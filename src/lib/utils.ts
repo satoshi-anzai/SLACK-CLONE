@@ -22,14 +22,27 @@ export function formatDateLabel(iso: string) {
   const diffDays = Math.floor(
     (startOfDay(today) - startOfDay(d)) / (24 * 60 * 60 * 1000),
   );
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
+  if (diffDays === 0) return "本日";
+  if (diffDays === 1) return "昨日";
   if (diffDays > 1 && diffDays < 7) {
-    return d.toLocaleDateString("en-US", { weekday: "long" });
+    return d.toLocaleDateString("ja-JP", { weekday: "long" });
   }
-  return d.toLocaleDateString("en-US", {
-    weekday: "long",
+  return d.toLocaleDateString("ja-JP", {
+    year: "numeric",
     month: "long",
     day: "numeric",
+    weekday: "long",
+  });
+}
+
+export function formatFullDateTime(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleString("ja-JP", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }

@@ -89,7 +89,6 @@ export function ChannelList({
           {items.map((c) => {
             const href = `/${c.id}`;
             const active = pathname === href;
-            const unread = (c.unreadCount ?? 0) > 0;
             return (
               <li key={c.id}>
                 <Link
@@ -98,9 +97,7 @@ export function ChannelList({
                     "flex items-center gap-2 px-4 py-[3px] text-[15px]",
                     active
                       ? "bg-slack-aubergine-active text-white"
-                      : "hover:bg-slack-sidebar-hover",
-                    !active && unread && "font-bold text-white",
-                    !active && !unread && "text-slack-sidebar-text",
+                      : "text-slack-sidebar-text hover:bg-slack-sidebar-hover",
                   )}
                 >
                   {c.kind === "channel" ? (
@@ -122,16 +119,14 @@ export function ChannelList({
                     </span>
                   ) : (
                     <span
-                      className="inline-block h-2 w-2 shrink-0 rounded-full bg-emerald-400"
+                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-white/10 text-[10px] text-slack-sidebar-text"
                       aria-hidden
-                    />
-                  )}
-                  <span className="flex-1 truncate">{c.name}</span>
-                  {unread && !active && (
-                    <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold text-white">
-                      {c.unreadCount}
+                      title="ユーザー情報なし"
+                    >
+                      ?
                     </span>
                   )}
+                  <span className="flex-1 truncate">{c.name}</span>
                 </Link>
               </li>
             );

@@ -16,7 +16,6 @@ export interface Channel {
   kind: "channel" | "dm";
   isPrivate?: boolean;
   topic?: string;
-  unreadCount?: number;
   /** DM のメンバー (両端 user.id)。channel kind では使用しない */
   dmMembers?: UserId[];
 }

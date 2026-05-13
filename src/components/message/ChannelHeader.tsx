@@ -1,14 +1,21 @@
 import { Hash, Lock, Star, Users } from "lucide-react";
 import type { Channel } from "@/lib/types";
-import { fetchUsers } from "@/lib/api/users";
+import { createClient } from "@/lib/supabase/server";
 
 export async function ChannelHeader({ channel }: { channel: Channel }) {
   const Icon =
     channel.kind === "dm" ? null : channel.isPrivate ? Lock : Hash;
 
   // DM はメンバー数を出さない (1:1 想定)
-  const memberCount =
-    channel.kind === "channel" ? (await fetchUsers()).length : null;
+  // 注: per-channel メンバーシップはまだ無いので「ワークスペース全員数」を表示
+  let memberCount: number | null = null;
+  if (channel.kind === "channel") {
+    const supabase = await createClient();
+    const { count } = await supabase
+      .from("users")
+      .select("*", { count: "exact", head: true });
+    memberCount = count ?? null;
+  }
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-gray-200 px-5">
@@ -20,6 +27,8 @@ export async function ChannelHeader({ channel }: { channel: Channel }) {
         <button
           className="rounded p-1 text-gray-500 hover:bg-gray-100"
           aria-label="Star"
+          title="お気に入り (未実装)"
+          disabled
         >
           <Star className="h-4 w-4" />
         </button>
@@ -30,10 +39,13 @@ export async function ChannelHeader({ channel }: { channel: Channel }) {
         )}
       </div>
       {memberCount !== null && (
-        <button className="flex shrink-0 items-center gap-1 rounded border border-gray-300 px-2 py-1 text-sm text-gray-700 hover:bg-gray-50">
+        <div
+          className="flex shrink-0 items-center gap-1 rounded border border-gray-300 px-2 py-1 text-sm text-gray-700"
+          title="ワークスペース内のユーザー数 (チャンネル別メンバーシップは未実装)"
+        >
           <Users className="h-4 w-4" />
           <span>{memberCount}</span>
-        </button>
+        </div>
       )}
     </header>
   );

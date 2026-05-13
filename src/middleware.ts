@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
+const PUBLIC_PATHS = ["/login", "/signup"];
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -25,8 +27,34 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  // セッションが期限切れに近ければ自動更新される
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const path = request.nextUrl.pathname;
+  const isPublic = PUBLIC_PATHS.includes(path);
+
+  // 未ログインで保護ルートにアクセス → /login へ
+  if (!user && !isPublic) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    const redirect = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((c) => {
+      redirect.cookies.set(c);
+    });
+    return redirect;
+  }
+
+  // ログイン済で /login や /signup にいる → /c_general へ
+  if (user && isPublic) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/c_general";
+    const redirect = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((c) => {
+      redirect.cookies.set(c);
+    });
+    return redirect;
+  }
 
   return response;
 }

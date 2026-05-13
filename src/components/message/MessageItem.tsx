@@ -2,7 +2,7 @@
 
 import { MessageSquare } from "lucide-react";
 import type { Message } from "@/lib/types";
-import { formatTime } from "@/lib/utils";
+import { formatTime, formatFullDateTime } from "@/lib/utils";
 import { useThread } from "@/components/message/ThreadContext";
 
 export function MessageItem({
@@ -19,6 +19,7 @@ export function MessageItem({
   const author = message.author;
   const initial = author?.displayName?.[0] ?? "?";
   const replyCount = message.replyCount ?? 0;
+  const fullDateTime = formatFullDateTime(message.createdAt);
 
   return (
     <div className="group relative flex gap-3 px-5 py-1 hover:bg-gray-50">
@@ -44,7 +45,10 @@ export function MessageItem({
             {initial}
           </div>
         ) : (
-          <div className="hidden h-full items-center justify-center text-[10px] text-gray-400 group-hover:flex">
+          <div
+            className="hidden h-full items-center justify-center text-[10px] text-gray-400 group-hover:flex"
+            title={fullDateTime}
+          >
             {formatTime(message.createdAt)}
           </div>
         )}
@@ -55,7 +59,7 @@ export function MessageItem({
             <span className="text-[15px] font-bold text-gray-900">
               {author?.displayName ?? "Unknown"}
             </span>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-gray-500" title={fullDateTime}>
               {formatTime(message.createdAt)}
             </span>
           </div>

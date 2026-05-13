@@ -49,7 +49,10 @@ export function MessageList({
     setMessages(initialMessages);
   }, [initialMessages]);
 
-  // Realtime: このチャンネルの新規メッセージ (top-level のみ) を購読
+  // Realtime: チャンネル内の messages を購読
+  // - top-level INSERT → リストに append
+  // - reply (parent_message_id あり) INSERT → 親の replyCount を +1
+  // - DELETE → リストから除外、reply の場合は親の replyCount を -1
   useEffect(() => {
     const supabase = createClient();
     const sub = supabase
@@ -64,11 +67,53 @@ export function MessageList({
         },
         async (payload) => {
           const id = (payload.new as { id: string }).id;
+          const parentId = (payload.new as { parent_message_id: string | null })
+            .parent_message_id;
+          if (parentId) {
+            // 返信 → 親の replyCount を increment
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === parentId
+                  ? { ...m, replyCount: (m.replyCount ?? 0) + 1 }
+                  : m,
+              ),
+            );
+            return;
+          }
           const full = await fetchMessageById(id);
-          if (!full || full.parentMessageId) return; // スレッド返信は除外
+          if (!full) return;
           setMessages((prev) =>
             prev.find((m) => m.id === full.id) ? prev : [...prev, full],
           );
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "messages",
+          filter: `channel_id=eq.${channel.id}`,
+        },
+        (payload) => {
+          const old = payload.old as {
+            id: string;
+            parent_message_id: string | null;
+          };
+          if (old.parent_message_id) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === old.parent_message_id
+                  ? {
+                      ...m,
+                      replyCount: Math.max(0, (m.replyCount ?? 0) - 1),
+                    }
+                  : m,
+              ),
+            );
+            return;
+          }
+          setMessages((prev) => prev.filter((m) => m.id !== old.id));
         },
       )
       .subscribe();

@@ -38,22 +38,28 @@ export async function WorkspaceHeader() {
       </div>
       <div className="hidden flex-1 items-center justify-end gap-2 text-white/80 md:flex">
         <button
-          className="rounded p-1.5 hover:bg-white/10"
+          className="rounded p-1.5 text-white/40 disabled:cursor-not-allowed"
           aria-label="History"
+          title="履歴 (未実装)"
+          disabled
         >
           <Clock className="h-4 w-4" />
         </button>
-        <button className="rounded p-1.5 hover:bg-white/10" aria-label="Help">
+        <button
+          className="rounded p-1.5 text-white/40 disabled:cursor-not-allowed"
+          aria-label="Help"
+          title="ヘルプ (未実装)"
+          disabled
+        >
           <HelpCircle className="h-4 w-4" />
         </button>
-        <button
-          type="button"
+        <div
           className="ml-1 flex h-7 w-7 items-center justify-center rounded text-xs font-bold text-white"
           style={{ backgroundColor: me?.avatarColor ?? "#999" }}
-          aria-label={me?.displayName ?? "Profile"}
+          title={me?.displayName ?? "未ログイン"}
         >
           {initial}
-        </button>
+        </div>
       </div>
     </header>
   );
